@@ -6,7 +6,6 @@ using SolidStateDetectors
 using LegendDataManagement
 using Unitful
 using PropDicts
-using OrderedCollections
 
 const _SSDDefaultNumtype = Float32
 
@@ -80,7 +79,7 @@ function SolidStateDetectors.Simulation{T}(::Type{LegendData}, meta::PropDict, x
 end
 
 
-function create_SSD_config_dict_from_LEGEND_metadata(meta::PropDict, xtal_meta::X) where {X <: Union{PropDict, LegendDataManagement.NoSuchPropsDBEntry}}
+function create_SSD_config_dict_from_LEGEND_metadata(meta::PropDict, xtal_meta::X; dicttype = Dict{String,Any}) where {X <: Union{PropDict, LegendDataManagement.NoSuchPropsDBEntry}}
 
     # Not all possible configurations are yet implemented!
     # https://github.com/legend-exp/legend-metadata/blob/main/hardware/detectors/detector-metadata_1.pdf
@@ -101,27 +100,27 @@ function create_SSD_config_dict_from_LEGEND_metadata(meta::PropDict, xtal_meta::
     
     is_coax = meta.type == "coax"
 
-    config_dict = OrderedDict{String, Any}(
+    config_dict = dicttype(
         "name" => meta.name,
-        "units" => OrderedDict{String,Any}(
+        "units" => dicttype(
             "length" => "mm",
             "potential" => "V",
             "angle" => "deg",
             "temperature" => "K"
         ),
-        "grid" => OrderedDict{String,Any}(
+        "grid" => dicttype(
             "coordinates" => "cylindrical",
-            "axes" => OrderedDict{String,Any}(
-                "r" => OrderedDict{String,Any}(
+            "axes" => dicttype(
+                "r" => dicttype(
                     "to" => crystal_radius * 1.2,
                     "boundaries" => "inf"
                 ),
-                "phi" => OrderedDict{String,Any}(
+                "phi" => dicttype(
                     "from" => 0,
                     "to" => 0,
                     "boundaries" => "reflecting"
                 ),
-                "z" => OrderedDict{String,Any}(
+                "z" => dicttype(
                     "from" => -0.2 * crystal_height,
                     "to" => 1.2 * crystal_height,
                     "boundaries" => "inf"
@@ -132,21 +131,21 @@ function create_SSD_config_dict_from_LEGEND_metadata(meta::PropDict, xtal_meta::
         "detectors" => []
     )
 
-    push!(config_dict["detectors"], OrderedDict{String, Any}(
-        "semiconductor" => OrderedDict{String, Any}(
+    push!(config_dict["detectors"], dicttype(
+        "semiconductor" => dicttype(
             "material" => "HPGe",
-            "charge_drift_model" => OrderedDict{String,Any}(
+            "charge_drift_model" => dicttype(
                 "include" => joinpath(SolidStateDetectors.get_path_to_example_config_files(), "ADLChargeDriftModel", "drift_velocity_config.yaml"),
             ),
-            # "impurity_density" => OrderedDict{String,Any}("parameters" => Vector()),
-            "geometry" => OrderedDict{String,Any}(),
+            # "impurity_density" => dicttype("parameters" => Vector()),
+            "geometry" => dicttype(),
             "temperature" => 78
         ),
         "contacts" => []
         ))
     
     # main crystal
-    semiconductor_geometry_basis = OrderedDict{String,Any}("cone" => OrderedDict{String,Any}(
+    semiconductor_geometry_basis = dicttype("cone" => dicttype(
         "r" => crystal_radius,
         "h" => crystal_height,
         "origin" => [0, 0, crystal_height / 2]
@@ -161,7 +160,7 @@ function create_SSD_config_dict_from_LEGEND_metadata(meta::PropDict, xtal_meta::
         if has_borehole
             borehole_depth = meta.geometry.borehole.depth_in_mm
             borehole_radius = meta.geometry.borehole.radius_in_mm
-            push!(semiconductor_geometry_subtractions, OrderedDict{String,Any}("cone" => OrderedDict{String,Any}(
+            push!(semiconductor_geometry_subtractions, dicttype("cone" => dicttype(
                 "r" => borehole_radius,
                 "h" => borehole_depth + 2*gap,
                 "origin" => [0, 0, is_coax ? borehole_depth/2 - gap : crystal_height - borehole_depth/2 + gap]
@@ -194,8 +193,8 @@ function create_SSD_config_dict_from_LEGEND_metadata(meta::PropDict, xtal_meta::
                 Δr = hZ * tand(borehole_taper_angle)         
                 r_out_bot = r_center - Δr
             r_out_top = r_center + Δr * (1 + 2*gap/hZ)
-            push!(semiconductor_geometry_subtractions, OrderedDict{String,Any}("cone" => OrderedDict{String,Any}(
-                "r" => OrderedDict{String,Any}(
+            push!(semiconductor_geometry_subtractions, dicttype("cone" => dicttype(
+                "r" => dicttype(
                     "from" => r_out_bot,
                     "to" => r_out_top
                 ),
@@ -226,13 +225,13 @@ function create_SSD_config_dict_from_LEGEND_metadata(meta::PropDict, xtal_meta::
                 r_in_bot = r_center + Δr
                 r_in_top = r_center - Δr
                 r_out = max(r_in_top, r_in_bot) + gap # ensure that r_out is always bigger as r_in
-                push!(semiconductor_geometry_subtractions, OrderedDict{String,Any}("cone" => OrderedDict{String,Any}(
-                    "r" => OrderedDict{String,Any}(
-                        "bottom" => OrderedDict{String,Any}(
+                push!(semiconductor_geometry_subtractions, dicttype("cone" => dicttype(
+                    "r" => dicttype(
+                        "bottom" => dicttype(
                             "from" => r_in_bot,
                             "to" => r_out
                         ),
-                        "top" => OrderedDict{String,Any}(
+                        "top" => dicttype(
                             "from" => r_in_top,
                             "to" => r_out
                         )
@@ -262,13 +261,13 @@ function create_SSD_config_dict_from_LEGEND_metadata(meta::PropDict, xtal_meta::
             r_in_bot = r_center - Δr
             r_in_top = r_center + Δr
             r_out = max(r_in_top, r_in_bot) + gap # ensure that r_out is always bigger as r_in
-            push!(semiconductor_geometry_subtractions, OrderedDict{String,Any}("cone" => OrderedDict{String,Any}(
-                "r" => OrderedDict{String,Any}(
-                        "bottom" => OrderedDict{String,Any}(
+            push!(semiconductor_geometry_subtractions, dicttype("cone" => dicttype(
+                "r" => dicttype(
+                        "bottom" => dicttype(
                             "from" => r_in_bot,
                             "to" => r_out
                         ),
-                        "top" => OrderedDict{String,Any}(
+                        "top" => dicttype(
                             "from" => r_in_top,
                             "to" => r_out
                         )
@@ -289,8 +288,8 @@ function create_SSD_config_dict_from_LEGEND_metadata(meta::PropDict, xtal_meta::
                 hZ = groove_depth / 2 + gap
                 r_in = groove_inner_radius
                 r_out = groove_outer_radius
-                push!(semiconductor_geometry_subtractions, OrderedDict{String,Any}("cone" => OrderedDict{String,Any}(
-                    "r" => OrderedDict{String,Any}(
+                push!(semiconductor_geometry_subtractions, dicttype("cone" => dicttype(
+                    "r" => dicttype(
                         "from" => r_in,
                         "to" => r_out
                     ),
@@ -304,7 +303,7 @@ function create_SSD_config_dict_from_LEGEND_metadata(meta::PropDict, xtal_meta::
     if isempty(semiconductor_geometry_subtractions)
         config_dict["detectors"][1]["semiconductor"]["geometry"] = semiconductor_geometry_basis
     else
-        config_dict["detectors"][1]["semiconductor"]["geometry"] = OrderedDict{String,Any}(
+        config_dict["detectors"][1]["semiconductor"]["geometry"] = dicttype(
             "difference" => [semiconductor_geometry_basis, semiconductor_geometry_subtractions...]
         )
     end
@@ -323,29 +322,29 @@ function create_SSD_config_dict_from_LEGEND_metadata(meta::PropDict, xtal_meta::
 
     pp_radius = meta.geometry.pp_contact.radius_in_mm
     pp_depth = meta.geometry.pp_contact.depth_in_mm
-    push!(config_dict["detectors"][1]["contacts"], OrderedDict{String,Any}(
+    push!(config_dict["detectors"][1]["contacts"], dicttype(
         "material" => "HPGe",
-        "geometry" => OrderedDict{String,Any}(),
+        "geometry" => dicttype(),
         "id" => 1,
         "potential" => 0
     ))
     config_dict["detectors"][1]["contacts"][1]["geometry"] = if is_coax
-        OrderedDict{String,Any}("union" => [
-            OrderedDict{String,Any}("cone" => OrderedDict{String,Any}(
-                "r" => OrderedDict{String,Any}(
+        dicttype("union" => [
+            dicttype("cone" => dicttype(
+                "r" => dicttype(
                     "from" => borehole_radius,
                     "to" => borehole_radius
                 ),
                 "h" => borehole_depth,
                 "origin" => [0, 0, borehole_depth]
             )),
-            OrderedDict{String,Any}("cone" => OrderedDict{String,Any}(
+            dicttype("cone" => dicttype(
                 "r" => borehole_radius,
                 "h" => 0,
                 "origin" => [0, 0, borehole_depth]
             )),
-            OrderedDict{String,Any}("cone" => OrderedDict{String,Any}(
-                "r" => OrderedDict{String,Any}(
+            dicttype("cone" => dicttype(
+                "r" => dicttype(
                     "from" => borehole_radius,
                     "to" => pp_radius
                 ),
@@ -353,7 +352,7 @@ function create_SSD_config_dict_from_LEGEND_metadata(meta::PropDict, xtal_meta::
             ))
         ])
     else
-        OrderedDict{String,Any}("cone" => OrderedDict{String,Any}(
+        dicttype("cone" => dicttype(
             "r" => pp_radius,
             "h" => pp_depth,
             "origin" => [0, 0, pp_depth]
@@ -363,9 +362,9 @@ function create_SSD_config_dict_from_LEGEND_metadata(meta::PropDict, xtal_meta::
 
     ### MANTLE CONTACT ###
 
-    push!(config_dict["detectors"][1]["contacts"], OrderedDict{String,Any}(
+    push!(config_dict["detectors"][1]["contacts"], dicttype(
         "material" => "HPGe",
-        "geometry" => OrderedDict{String,Any}("union" => []),
+        "geometry" => dicttype("union" => []),
         "id" => 2,
         "potential" => meta.characterization.manufacturer.recommended_voltage_in_V
     ))
@@ -379,9 +378,9 @@ function create_SSD_config_dict_from_LEGEND_metadata(meta::PropDict, xtal_meta::
                 r_out = crystal_radius
                 if has_borehole_taper r_in += borehole_taper_radius end
                 if has_top_taper r_out -= top_taper_radius end
-                OrderedDict{String,Any}("from" => r_in, "to" => r_out)
+                dicttype("from" => r_in, "to" => r_out)
             end
-            OrderedDict{String,Any}("cone" => OrderedDict{String,Any}(
+            dicttype("cone" => dicttype(
                 "r" => r,
                 "h" => li_thickness,
                 "origin" => [0, 0, crystal_height - li_thickness / 2]
@@ -394,13 +393,13 @@ function create_SSD_config_dict_from_LEGEND_metadata(meta::PropDict, xtal_meta::
             h = top_taper_height
             r_bot = crystal_radius 
             r_top = crystal_radius - top_taper_radius
-            push!(mantle_contact_parts, OrderedDict{String,Any}("cone" => OrderedDict{String,Any}(
-                "r" => OrderedDict{String,Any}(
-                    "bottom" => OrderedDict{String,Any}(
+            push!(mantle_contact_parts, dicttype("cone" => dicttype(
+                "r" => dicttype(
+                    "bottom" => dicttype(
                         "from" => r_bot - Δr_li_thickness,
                         "to" => r_bot
                     ),
-                    "top" => OrderedDict{String,Any}(
+                    "top" => dicttype(
                         "from" => r_top - Δr_li_thickness,
                         "to" => r_top
                     )
@@ -415,13 +414,13 @@ function create_SSD_config_dict_from_LEGEND_metadata(meta::PropDict, xtal_meta::
             h = borehole_taper_height    
             r_bot = borehole_radius
             r_top = borehole_radius + borehole_taper_radius
-            push!(mantle_contact_parts, OrderedDict{String,Any}("cone" => OrderedDict{String,Any}(
-                "r" => OrderedDict{String,Any}(
-                    "bottom" => OrderedDict{String,Any}(
+            push!(mantle_contact_parts, dicttype("cone" => dicttype(
+                "r" => dicttype(
+                    "bottom" => dicttype(
                         "from" => r_bot,
                         "to" => r_bot + Δr_li_thickness
                     ),
-                    "top" => OrderedDict{String,Any}(
+                    "top" => dicttype(
                         "from" => r_top,
                         "to" => r_top + Δr_li_thickness
                     )
@@ -431,8 +430,8 @@ function create_SSD_config_dict_from_LEGEND_metadata(meta::PropDict, xtal_meta::
             )))
 
             h = (borehole_depth - borehole_taper_height)
-            push!(mantle_contact_parts, OrderedDict{String,Any}("cone" => OrderedDict{String,Any}(
-                "r" => OrderedDict{String,Any}(
+            push!(mantle_contact_parts, dicttype("cone" => dicttype(
+                "r" => dicttype(
                     "from" => borehole_radius,
                     "to" => borehole_radius + Δr_li_thickness
                 ),
@@ -441,8 +440,8 @@ function create_SSD_config_dict_from_LEGEND_metadata(meta::PropDict, xtal_meta::
             )))
         elseif has_borehole && !is_coax # but no borehole taper
             h = borehole_depth
-            push!(mantle_contact_parts, OrderedDict{String,Any}("cone" => OrderedDict{String,Any}(
-                "r" => OrderedDict{String,Any}(
+            push!(mantle_contact_parts, dicttype("cone" => dicttype(
+                "r" => dicttype(
                     "from" => borehole_radius,
                     "to" => borehole_radius + li_thickness
                 ),
@@ -453,7 +452,7 @@ function create_SSD_config_dict_from_LEGEND_metadata(meta::PropDict, xtal_meta::
 
         if has_borehole && !is_coax
             r = borehole_radius + li_thickness
-            push!(mantle_contact_parts, OrderedDict{String,Any}("cone" => OrderedDict{String,Any}(
+            push!(mantle_contact_parts, dicttype("cone" => dicttype(
                 "r" => r,
                 "h" => li_thickness / 2,
                 "origin" => [0, 0, crystal_height - borehole_depth - li_thickness / 2]
@@ -468,8 +467,8 @@ function create_SSD_config_dict_from_LEGEND_metadata(meta::PropDict, xtal_meta::
                 h -= bot_taper_height 
                 z_origin += bot_taper_height/2
             end
-            push!(mantle_contact_parts, OrderedDict{String,Any}("cone" => OrderedDict{String,Any}(
-                "r" => OrderedDict{String,Any}(
+            push!(mantle_contact_parts, dicttype("cone" => dicttype(
+                "r" => dicttype(
                     "from" => crystal_radius - li_thickness,
                     "to" => crystal_radius
                 ),
@@ -483,13 +482,13 @@ function create_SSD_config_dict_from_LEGEND_metadata(meta::PropDict, xtal_meta::
             h = bot_taper_height
             r_bot = crystal_radius - bot_taper_radius
             r_top = crystal_radius
-            push!(mantle_contact_parts, OrderedDict{String,Any}("cone" => OrderedDict{String,Any}(
-                "r" => OrderedDict{String,Any}(
-                    "bottom" => OrderedDict{String,Any}(
+            push!(mantle_contact_parts, dicttype("cone" => dicttype(
+                "r" => dicttype(
+                    "bottom" => dicttype(
                         "from" => r_bot - Δr_li_thickness,
                         "to" => r_bot
                     ),
-                    "top" => OrderedDict{String,Any}(
+                    "top" => dicttype(
                         "from" => r_top - Δr_li_thickness,
                         "to" => r_top
                     )
@@ -503,8 +502,8 @@ function create_SSD_config_dict_from_LEGEND_metadata(meta::PropDict, xtal_meta::
             r_in = groove_outer_radius 
             r_out = crystal_radius
             if has_bot_taper r_out -= bot_taper_radius end
-            push!(mantle_contact_parts, OrderedDict{String,Any}("cone" => OrderedDict{String,Any}(
-                "r" => OrderedDict{String,Any}(
+            push!(mantle_contact_parts, dicttype("cone" => dicttype(
+                "r" => dicttype(
                     "from" => r_in,
                     "to" => r_out
                 ),
@@ -517,10 +516,9 @@ function create_SSD_config_dict_from_LEGEND_metadata(meta::PropDict, xtal_meta::
     end
 
  
-    config_dict["detectors"][1]["semiconductor"]["impurity_density"] =  OrderedDict{String,Any}(
+    config_dict["detectors"][1]["semiconductor"]["impurity_density"] = dicttype(
         "name" => "constant", 
         "value" => "-1e9cm^-3"
-        )
     )
 
     # evaluate "include" statements - needed for the charge drift model
