@@ -3,6 +3,7 @@
 using LegendDataManagement
 using Test
 using SolidStateDetectors
+using LegendHDF5IO
 
 include("testing_utils.jl")
 
@@ -87,6 +88,14 @@ end
             active_volume_ssd = SolidStateDetectors.get_active_volume(sim.point_types)
             active_volume_ldm = LegendDataManagement.get_active_volume(l200.metadata.hardware.detectors.germanium.diodes[Symbol(detname)], 0.0)
             @test isapprox(active_volume_ssd, active_volume_ldm, rtol = 0.01)
+
+            # The creation via config files allows to save Simulations to files using LegendHDF5IO
+            lh5name = "$(detname).lh5"
+            @test_nowarn ssd_write(lh5name, sim)
+            @test isfile(lh5name)
+            @test sim == ssd_read(lh5name, Simulation)
+            @test_nowarn rm(lh5name)
+            @test !isfile(lh5name)
         end
     end
 end
