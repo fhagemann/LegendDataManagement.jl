@@ -520,7 +520,6 @@ function create_SSD_config_dict_from_LEGEND_metadata(meta::PropDict, xtal_meta::
     config_dict["detectors"][1]["semiconductor"]["impurity_density"] =  OrderedDict{String,Any}(
         "name" => "constant", 
         "value" => "-1e9cm^-3"
-        )
     )
 
     # evaluate "include" statements - needed for the charge drift model
